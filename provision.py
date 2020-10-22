@@ -18,17 +18,17 @@ def create_networks(api_key, org_id, sites, locations, custom_tags):
     net_type = 'appliance switch wireless camera systemsManager'
     (ok, networks) = get_networks(api_key, org_id)
     net_names = [net['name'] for net in networks]
-    #try:
-    #    isp_net = networks[net_names.index('ISP')]['id']
-    #except ValueError:
-    #    (ok, data) = create_network(api_key, org_id, 'ISP', net_type)
-    #    if not ok:
-    #        sys.exit(data)
-    #    isp_net = data['id']
-    #    (ok, data) = enable_vlans(api_key, isp_net, True)
-    #    if not ok:
-    #        sys.exit(data)
-    #    print(f'Created a base network "ISP" with VLANs enabled, network ID {isp_net}!')
+    try:
+        template_net = networks[net_names.index('Pilot WFH Agent Z3')]['id']
+    except ValueError:
+        (ok, data) = create_network(api_key, org_id, 'Pilot WFH Agent Z3', net_type)
+        if not ok:
+            sys.exit(data)
+        template_net = data['id']
+        (ok, data) = enable_vlans(api_key, template_net, True)
+        if not ok:
+            sys.exit(data)
+        print(f'Created a base network "Pilot WFH Agent Z3" with VLANs enabled, network ID {template_net}!')
 
     actions = []
     for (site, location) in zip(sites, locations):
@@ -38,8 +38,8 @@ def create_networks(api_key, org_id, sites, locations, custom_tags):
             'name': net_name,
             'type': net_type,
             'tags': net_tags,
+            'copyFromNetworkId': template_net
         }
-            #'copyFromNetworkId': isp_net
         actions.append({
             'resource': f'/organizations/{org_id}/networks',
             'operation': 'create',
