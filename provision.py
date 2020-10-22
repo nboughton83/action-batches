@@ -357,21 +357,23 @@ def main():
                     reader = csv.DictReader(csvfile, delimiter=',', quotechar='"')
                     for row in reader:
                         net_id = networks_data[counter]['net_id']
-                        mx_serial = row['MX device']
+                        #mx_serial = row['MX device']
                         z3_serial = row['Z3 device']
-                        ms_serial = row['MS device']
-                        mr_serial = row['MR device']
-                        mv_serial = row['MV device']
-                        mgmt_vlan = int(row['Mgmt. VLAN'])
-                        for serial in (mx_serial,z3_serial, ms_serial, mr_serial, mv_serial):
+                        #ms_serial = row['MS device']
+                        #mr_serial = row['MR device']
+                        #mv_serial = row['MV device']
+                        #mgmt_vlan = int(row['Mgmt. VLAN'])
+                        #for serial in (mx_serial,z3_serial, ms_serial, mr_serial, mv_serial):
+                        for serial in (z3_serial):
                             add_devices(actions, net_id, serial)
-                        devices = [(mx_serial, 'SD-WAN UTM gateway'),
-                                   (z3_serial, row['HostName']),
-                                   (ms_serial, 'Access switch'),
-                                   (mr_serial, 'Wireless AP'),
-                                   (mv_serial, 'Security camera')]
+                        devices = [(z3_serial, row['HostName'])]
+                        #devices = [(mx_serial, 'SD-WAN UTM gateway'),
+                        #           (z3_serial, row['HostName']),
+                        #           (ms_serial, 'Access switch'),
+                        #           (mr_serial, 'Wireless AP'),
+                        #           (mv_serial, 'Security camera')]
                         networks_data[counter]['devices'] = devices
-                        networks_data[counter]['mgmt_vlan'] = mgmt_vlan
+                        #networks_data[counter]['mgmt_vlan'] = mgmt_vlan
                         counter += 1
 
                     create_devices(api_key, org_id, actions)
