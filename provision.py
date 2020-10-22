@@ -18,28 +18,28 @@ def create_networks(api_key, org_id, sites, locations, custom_tags):
     net_type = 'appliance switch wireless camera systemsManager'
     (ok, networks) = get_networks(api_key, org_id)
     net_names = [net['name'] for net in networks]
-    try:
-        isp_net = networks[net_names.index('ISP')]['id']
-    except ValueError:
-        (ok, data) = create_network(api_key, org_id, 'ISP', net_type)
-        if not ok:
-            sys.exit(data)
-        isp_net = data['id']
-        (ok, data) = enable_vlans(api_key, isp_net, True)
-        if not ok:
-            sys.exit(data)
-        print(f'Created a base network "ISP" with VLANs enabled, network ID {isp_net}!')
+    #try:
+    #    isp_net = networks[net_names.index('ISP')]['id']
+    #except ValueError:
+    #    (ok, data) = create_network(api_key, org_id, 'ISP', net_type)
+    #    if not ok:
+    #        sys.exit(data)
+    #    isp_net = data['id']
+    #    (ok, data) = enable_vlans(api_key, isp_net, True)
+    #    if not ok:
+    #        sys.exit(data)
+    #    print(f'Created a base network "ISP" with VLANs enabled, network ID {isp_net}!')
 
     actions = []
     for (site, location) in zip(sites, locations):
         net_name = location.replace(',', ' -')
-        net_tags = ' '.join(random.sample(custom_tags + ['foo', 'bar', 'foobar', 'spam', 'ham', 'eggs'], 3))
+        net_tags = ' '.join(custom_tags)
         action = {
             'name': net_name,
             'type': net_type,
             'tags': net_tags,
-            'copyFromNetworkId': isp_net
         }
+            #'copyFromNetworkId': isp_net
         actions.append({
             'resource': f'/organizations/{org_id}/networks',
             'operation': 'create',
@@ -295,7 +295,7 @@ def main():
     # Create some stuff
     while True:
         print()
-        stop = input('Create which of the following?  1) Networks   2) Devices   3) Settings   4) Fun!   5 ) Bye!  ')
+        stop = input('Create which of the following?  1) Networks   2) Devices   3) Settings  4) Bye')
         stop = stop.lower()
         if 'network' in stop:
             stop = '1'
@@ -303,10 +303,8 @@ def main():
             stop = '2'
         elif 'setting' in stop:
             stop = '3'
-        elif 'fun' in stop:
+        elif 'bye' in stop:
             stop = '4'
-        elif 'fun' in stop:
-            stop = '5'
 
         try:
             with open('networks_data.json') as fp:
@@ -359,13 +357,15 @@ def main():
                     for row in reader:
                         net_id = networks_data[counter]['net_id']
                         mx_serial = row['MX device']
+                        z3_serial = row['Z3 device']
                         ms_serial = row['MS device']
                         mr_serial = row['MR device']
                         mv_serial = row['MV device']
                         mgmt_vlan = int(row['Mgmt. VLAN'])
-                        for serial in (mx_serial, ms_serial, mr_serial, mv_serial):
+                        for serial in (mx_serial,z3_serial, ms_serial, mr_serial, mv_serial):
                             add_devices(actions, net_id, serial)
                         devices = [(mx_serial, 'SD-WAN UTM gateway'),
+                                   (z3_serial, row['HostName']),
                                    (ms_serial, 'Access switch'),
                                    (mr_serial, 'Wireless AP'),
                                    (mv_serial, 'Security camera')]
@@ -393,6 +393,7 @@ def main():
                         actions = []
                         net_id = networks_data[counter]['net_id']
                         mx_serial = row['MX device']
+                        z3_serial = row['Z3 device']
                         ms_serial = row['MS device']
                         mr_serial = row['MR device']
                         mv_serial = row['MV device']
@@ -402,6 +403,7 @@ def main():
                         address = row['Address'] if 'Address' in row else location
 
                         devices = [(mx_serial, 'SD-WAN UTM gateway'),
+                                   (z3_serial, 'Teleworker gateway'),
                                    (ms_serial, 'Access switch'),
                                    (mr_serial, 'Wireless AP'),
                                    (mv_serial, 'Security camera')]
@@ -426,44 +428,8 @@ def main():
                     with open('networks_data.json', 'w') as fp:
                         json.dump(networks_data, fp)
 
-        # Creating fun!
-        elif stop == '4':
-            if not networks_data:
-                print('Networks need to be created first!')
-            elif 'devices' not in networks_data[0]:
-                print('Devices need to be claimed first!')
-            else:
-                with open('inventory.csv', newline='\n', encoding='utf-8-sig') as csvfile:
-                    reader = csv.DictReader(csvfile, delimiter=',', quotechar='"')
-                    row = next(reader)
-                    stage_net = networks_data[0]['net_id']
-                    stage_devices = networks_data[0]['devices']
-                    stage_cam = networks_data[0]['devices'][3][0]
-
-                    for (device, description) in stage_devices:
-                        (ok, data) = blink_device(api_key, stage_net, device, 120)
-                    if ok:
-                        print(f'Devices should now be blinking!')
-
-                    # Take a snapshot from on-stage camera
-                    time.sleep(5)
-                    for x in range(3):
-                        if x == 0:
-                            message = '## 🎉🥂 Thank you for attending _Powerful, Programmable Cloud Networking with Meraki APIs_! 💪📝'
-                        elif x == 1:
-                            message = '## ✅😇 Check out the Developer Hub @ meraki.io! 🌎💚'
-                        elif x == 2:
-                            message = '## 🌟💫 Hope you enjoyed this demo, and thanks for watching! 🤜🤛'
-
-                        (ok, data) = take_snapshot(api_key, stage_net, stage_cam)
-                        if ok:
-                            print(message)
-                            photo = data['url']
-                            time.sleep(10)
-                            post_message(photo, message)
-
         # Bye!
-        elif stop == '5':
+        elif stop == '4':
             for net in networks_data:
                 ok = delete_network(api_key, net['net_id'])
                 if ok:
