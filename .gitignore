@@ -102,3 +102,9 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+config.py
+action_batches.code-workspace
+bulk_import.py
+test.py
+.vscode
